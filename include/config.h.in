@@ -1,0 +1,6 @@
+#ifndef config_h_H_
+#define config_h_H_
+
+#define RAYTRACER_VERSION "@version@"
+
+#endif // config.h_H_
