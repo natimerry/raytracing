@@ -2,6 +2,7 @@
 #define logging_H_
 #include <chrono>
 #include <format>
+#include <functional>
 #include <iostream>
 #include <print>
 #include <colors.hpp>
@@ -22,7 +23,6 @@ concept Printable = requires(std::ostream& os, T val) {
 };
 namespace logging
 {
-    // Helper function to handle the actual logging
     template <typename... Args>
     inline void __log(const std::string_view& level_color, const std::string& level_label,
                       std::format_string<Args...> fmt, Args&&... args)
@@ -65,22 +65,30 @@ namespace logging
     {
         // Helper function to log progress (overwriting the line)
         template <typename... Args>
-        inline void logr(std::format_string<Args...> fmt, Args&&... args)
+        inline void logr(bool final, std::format_string<Args...> fmt, Args&&... args)
         {
-            std::print("\r[{}{}PROGRESS{} {}] {}", text_formatting::blue, text_formatting::bold, text_formatting::reset,
-                       current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
-            std::cout.flush(); // Ensure immediate flushing for overwriting
-        }
-
-        inline void percentage(int percent)
-        {
-            logr("Progress: {}%", percent);
+            auto print = [fmt, &args...]() {
+                std::print("\r[{}{}PROGRESS{} {}] {} ", text_formatting::blue, text_formatting::bold,
+                           text_formatting::reset, current_time(),
+                           std::vformat(fmt.get(), std::make_format_args(args...)));
+            };
+            if (!final)
+            {
+                print();
+                std::cout.flush(); // Ensure immediate flushing for overwriting
+            }
+            else
+            {
+                print();
+                std::cout.flush();
+                std::println();
+            }
         }
 
         template <Printable... Args>
-        inline void with_data(std::format_string<Args...> fmt, Args&&... args)
+        inline void with_data(std::function<bool()> const& func, std::format_string<Args...> fmt, Args&&... args)
         {
-            logr(fmt, std::forward<Args>(args)...);
+            logr(func(), fmt, std::forward<Args>(args)...);
         }
     }
 }

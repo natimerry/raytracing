@@ -18,7 +18,9 @@
 
 color::Color3 ray_color(const Ray& r)
 {
-    return color::Color3(0, 0, 0);
+    Vec3 unit = unit_vec(r.direction());
+    auto a = (1 / 2.) * (unit.y() + 1.);
+    return (1.0 - a) * color::Color3(0.1, 0.3, 0.4) + a * color::Color3(1.0, 1.0, 1.0);
 }
 
 std::ofstream get_output_file_stream(std::filesystem::path file_name)
@@ -76,7 +78,9 @@ int main(int argc, char** argv)
 
     for (auto j : std::ranges::iota_view(0, image_height))
     {
-        logging::progress::with_data("Remaining scanlines: {}", image_height - j);
+        auto lambda = [image_height, j]() { return (image_height - j) == 1; };
+        logging::progress::with_data(lambda, "Remaining scanlines: {}", image_height - j);
+
         for (auto i : std::ranges::iota_view(0, image_width))
         {
             auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
@@ -87,5 +91,6 @@ int main(int argc, char** argv)
             color::write_color(out_stream, pixel_color);
         }
     }
+
     out_stream.close();
 }
