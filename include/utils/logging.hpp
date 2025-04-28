@@ -44,7 +44,7 @@ namespace logging
     }
 
     template <Printable... Args>
-    inline void error(std::format_string<Args...> fmt, Args&&... args)
+    inline void log_error(std::format_string<Args...> fmt, Args&&... args)
     {
         __log(text_formatting::red, "ERROR", fmt, std::forward<Args>(args)...);
     }

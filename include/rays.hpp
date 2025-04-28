@@ -1,3 +1,7 @@
+#ifndef rays_H_
+#define rays_H_
+
+#include "colors.hpp"
 #include <vector.hpp>
 
 class Ray
@@ -28,3 +32,7 @@ class Ray
     Point3 orig;
     Point3 dir;
 };
+
+color::Color3 ray_color(const Ray& r);
+
+#endif // rays_H_

@@ -1,27 +1,15 @@
-#include "colors.hpp"
+#include "renderer.hpp"
 #include "utils/logging.hpp"
-#include "vector.hpp"
-#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
-#include <ostream>
 #include <print>
-#include <ranges>
 #include <fstream>
 #include <rays.hpp>
-#include <thread>
 
 #define PROJECT_NAME "raytracer"
-
-color::Color3 ray_color(const Ray& r)
-{
-    Vec3 unit = unit_vec(r.direction());
-    auto a = (1 / 2.) * (unit.y() + 1.);
-    return (1.0 - a) * color::Color3(0.1, 0.3, 0.4) + a * color::Color3(1.0, 1.0, 1.0);
-}
 
 std::ofstream get_output_file_stream(std::filesystem::path file_name)
 {
@@ -29,27 +17,16 @@ std::ofstream get_output_file_stream(std::filesystem::path file_name)
     std::ofstream out_stream(file_name);
     if (!out_stream)
     {
-        logging::error("Opening {} failed.", file_name.c_str());
+        logging::log_error("Opening {} failed.", file_name.c_str());
     }
 
     return out_stream;
 }
 
-int main(int argc, char** argv)
+int main()
 {
-    std::ofstream out_stream;
-    if (argc >= 2)
-    {
-        out_stream = get_output_file_stream(argv[1]);
-    }
-    else
-    {
-        logging::error("Invalid arguments passed, requires an output filename.");
-        exit(1);
-    }
-
     auto aspect_ratio = 16.0 / 9.0;
-    int image_width = 400;
+    int image_width = 2160;
 
     // Calculate the image height, and ensure that it's at least 1.
     int image_height = int(image_width / aspect_ratio);
@@ -74,23 +51,30 @@ int main(int argc, char** argv)
     auto viewport_upper_left = camera_center - Vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
     auto pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    files::write_to_stream(out_stream, "P3\n{} {}\n255\n", image_width, image_height);
+    Renderer renderer(image_width, image_height, "OpenGL Ray Tracer");
 
-    for (auto j : std::ranges::iota_view(0, image_height))
+    while (!renderer.should_close())
     {
-        auto lambda = [image_height, j]() { return (image_height - j) == 1; };
-        logging::progress::with_data(lambda, "Remaining scanlines: {}", image_height - j);
+        renderer.clear(); // Clear the screen
 
-        for (auto i : std::ranges::iota_view(0, image_width))
+        for (int j = 0; j < image_height; j++)
         {
-            auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
-            auto ray_direction = pixel_center - camera_center;
-            Ray r(camera_center, ray_direction);
+            // Process each pixel in the current scanline
+            for (int i = 0; i < image_width; i++)
+            {
+                auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+                auto ray_direction = pixel_center - camera_center;
+                Ray r(camera_center, ray_direction);
 
-            color::Color3 pixel_color = ray_color(r);
-            color::write_color(out_stream, pixel_color);
+                color::Color3 pixel_color = ray_color(r);
+                renderer.update_pixel_color(i, j, pixel_color);
+            }
+
+            renderer.render();       // Render the texture onto the screen
+            renderer.swap_buffers(); // Swap buffers to show the rendered frame
+            renderer.poll_events();  // Process events (e.g., input, window events)
         }
     }
 
-    out_stream.close();
+    return 0;
 }

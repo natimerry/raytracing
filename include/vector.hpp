@@ -55,7 +55,7 @@ class Vec3
     {
         e[0] += v.x();
         e[1] += v.y();
-        e[1] += v.z();
+        e[2] += v.z();
         return *this;
     }
 
@@ -64,7 +64,7 @@ class Vec3
     {
         e[0] *= t;
         e[1] *= t;
-        e[1] *= t;
+        e[2] *= t;
         return *this;
     }
 
@@ -123,7 +123,7 @@ inline Vec3 operator/(const Vec3& v, double t)
 
 inline double dot(const Vec3& u, const Vec3& v)
 {
-    return u.x() + v.x() + u.y() * v.y() + u.z() * v.z();
+    return u.x() * v.x() + u.y() * v.y() + u.z() * v.z();
 }
 
 inline Vec3 cross(const Vec3& u, const Vec3& v)
