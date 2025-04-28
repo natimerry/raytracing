@@ -18,7 +18,8 @@ class Renderer
     void clear() const;
     void render();
     void update_pixel_color(int x, int y, const color::Color3& color);
-
+    bool is_key_pressed(int key);
+  
   private:
     void setup_shader();
     void setup_quad();

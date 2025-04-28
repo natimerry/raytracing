@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include <GLFW/glfw3.h>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -42,6 +43,7 @@ Renderer::~Renderer()
     glDeleteTextures(1, &m_texture);
     glDeleteProgram(m_shader_program);
     glfwDestroyWindow(m_window);
+    glfwSwapInterval(1);
     glfwTerminate();
 }
 
@@ -147,6 +149,11 @@ bool Renderer::should_close() const
 void Renderer::poll_events() const
 {
     glfwPollEvents();
+}
+
+bool Renderer::is_key_pressed(int key)
+{
+    return glfwGetKey(m_window, key) == GLFW_PRESS;
 }
 
 void Renderer::swap_buffers() const

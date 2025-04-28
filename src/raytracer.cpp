@@ -1,6 +1,6 @@
 #include "renderer.hpp"
 #include "utils/logging.hpp"
-#include <atomic>
+#include <GLFW/glfw3.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,7 +9,6 @@
 #include <print>
 #include <fstream>
 #include <rays.hpp>
-#include <thread>
 #include <threadpool.hpp>
 
 #define PROJECT_NAME "raytracer"
@@ -40,7 +39,7 @@ int main()
     auto focal_length = 1.0;
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (double(image_width) / image_height);
-    auto camera_center = Point3(0, 0, 0);
+    Point3 camera_center = Point3(0, 0, 0);
 
     // Calculate the vectors across the horizontal and down the vertical viewport edges.
     auto viewport_u = Vec3(viewport_width, 0, 0);
@@ -56,66 +55,76 @@ int main()
 
     Renderer renderer(image_width, image_height, "OpenGL Ray Tracer");
 
-    unsigned int num_threads = std::thread::hardware_concurrency() - 1;
-    if (num_threads < 1)
-    {
-        num_threads = 1;
-    }
-
-    bool done = false;
-
     while (!renderer.should_close())
     {
-        renderer.clear();
+        auto move_speed = 0.05;
+        if (renderer.is_key_pressed(GLFW_KEY_UP))
+        {
+            camera_center += Vec3(0, move_speed, 0);
+        }
+        if (renderer.is_key_pressed(GLFW_KEY_DOWN))
+        {
+            camera_center += Vec3(0, -move_speed, 0);
+        }
+        if (renderer.is_key_pressed(GLFW_KEY_LEFT))
+        {
+            camera_center += Vec3(-move_speed, 0, 0);
+        }
+        if (renderer.is_key_pressed(GLFW_KEY_RIGHT))
+        {
+            camera_center += Vec3(move_speed, 0, 0);
+        }
 
-        const int tile_size = 128;
+        if (renderer.is_key_pressed(GLFW_KEY_Q))
+        {
+            camera_center += Vec3(0, 0, -move_speed);
+        }
+        if (renderer.is_key_pressed(GLFW_KEY_E))
+        {
+            camera_center += Vec3(0, 0, +move_speed);
+        }
+
+        const int tile_size = 256;
         int num_tiles_x = (image_width + tile_size - 1) / tile_size;
         int num_tiles_y = (image_height + tile_size - 1) / tile_size;
 
         auto& pool = ThreadPool::global();
         std::atomic<int> tiles_completed(0);
 
-        if (!done)
+        for (int ty = 0; ty < num_tiles_y; ty++)
         {
-            for (int ty = 0; ty < num_tiles_y; ty++)
+            for (int tx = 0; tx < num_tiles_x; tx++)
             {
-                auto lambda = [ty, num_tiles_y]() { return num_tiles_y - ty == 1; };
-                logging::progress::with_data(lambda, "Tiles left: {}", (num_tiles_y - ty) - 1);
+                pool.enqueue([&, tx, ty]() {
+                    int start_x = tx * tile_size;
+                    int end_x = std::min(start_x + tile_size, image_width);
+                    int start_y = ty * tile_size;
+                    int end_y = std::min(start_y + tile_size, image_height);
 
-                for (int tx = 0; tx < num_tiles_x; tx++)
-                {
-                    pool.enqueue([&, tx, ty]() {
-                        int start_x = tx * tile_size;
-                        int end_x = std::min(start_x + tile_size, image_width);
-                        int start_y = ty * tile_size;
-                        int end_y = std::min(start_y + tile_size, image_height);
-
-                        for (int j = start_y; j < end_y; j++)
+                    for (int j = start_y; j < end_y; j++)
+                    {
+                        for (int i = start_x; i < end_x; i++)
                         {
-                            for (int i = start_x; i < end_x; i++)
-                            {
-                                auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
-                                auto ray_direction = pixel_center - camera_center;
-                                Ray r(camera_center, ray_direction);
+                            auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+                            auto ray_direction = pixel_center - camera_center;
+                            Ray r(camera_center, ray_direction);
 
-                                color::Color3 pixel_color = ray_color(r);
-                                renderer.update_pixel_color(i, j, pixel_color);
-                            }
+                            color::Color3 pixel_color = r.ray_color();
+                            renderer.update_pixel_color(i, j, pixel_color);
                         }
+                    }
 
-                        tiles_completed++;
-                    });
-                }
+                    tiles_completed++;
+                });
             }
-            done = true;
         }
 
         while (tiles_completed < num_tiles_x * num_tiles_y)
         {
+            renderer.clear();
             renderer.render();
             renderer.swap_buffers();
             renderer.poll_events();
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }
 
