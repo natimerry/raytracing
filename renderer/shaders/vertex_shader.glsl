@@ -1,7 +1,7 @@
-uniform sampler2D u_texture;
-
-void main()
-{
-    vec2 uv = (gl_FragCoord.xy / vec2(800.0, 600.0)); // adjust to your window size
-    FragColor = texture(u_texture, uv);
+#version 330 core
+layout(location = 0) in vec2 aPos;
+out vec2 uv;
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+    uv = aPos * 0.5 + 0.5;
 }

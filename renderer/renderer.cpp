@@ -100,26 +100,10 @@ std::string Renderer::load_shader_source(const std::string& filename)
 void Renderer::setup_shader()
 {
     // Vertex shader
-    std::string vertex_shader_code = R"glsl(
-        #version 330 core
-        layout(location = 0) in vec2 aPos;
-        out vec2 uv;
-        void main() {
-            gl_Position = vec4(aPos, 0.0, 1.0);
-            uv = aPos * 0.5 + 0.5;
-        }
-    )glsl";
+    std::string vertex_shader_code = load_shader_source("renderer/shaders/vertex_shader.glsl");
 
     // Fragment shader
-    std::string fragment_shader_code = R"glsl(
-        #version 330 core
-        in vec2 uv;
-        out vec4 FragColor;
-        uniform sampler2D u_texture;
-        void main() {
-            FragColor = texture(u_texture, uv);
-        }
-    )glsl";
+    std::string fragment_shader_code = load_shader_source("renderer/shaders/fragment_shader.glsl");
 
     GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     const char* vertex_shader_cstr = vertex_shader_code.c_str();
