@@ -84,8 +84,8 @@ namespace logging
             else
             {
                 print();
-                std::print("\r... done");
                 std::cout.flush();
+                std::print("\n... done");
                 std::println();
             }
         }

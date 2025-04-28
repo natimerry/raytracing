@@ -92,6 +92,11 @@ class Vec3
 
 using Point3 = Vec3;
 
+inline bool operator==(const Vec3& v, const Vec3& u)
+{
+    return (v.x() == u.x()) && (v.y() == u.y()) && (v.z() == u.z());
+}
+
 inline std::ostream& operator<<(std::ostream& out, const Vec3& v)
 {
     return out << v.x() << ' ' << v.y() << ' ' << v.z();
