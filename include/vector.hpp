@@ -2,6 +2,7 @@
 #define vector_H_
 
 #include <cmath>
+#include <format>
 #include <ostream>
 class Vec3
 {
@@ -81,6 +82,11 @@ class Vec3
     double length() const
     {
         return std::sqrt(this->length_squared());
+    }
+
+    std::string print() const
+    {
+        return std::format("Vec({},{},{})", e[0], e[1], e[2]);
     }
 };
 

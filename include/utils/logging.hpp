@@ -17,6 +17,7 @@ static inline std::string current_time()
     return buffer;
 }
 
+// TODO: move all of this into a singleton object which asynchronously handles logging
 template <typename T>
 concept Printable = requires(std::ostream& os, T val) {
     { os << val } -> std::convertible_to<std::ostream&>;
@@ -58,7 +59,7 @@ namespace logging
     template <Printable... Args>
     inline void trace(std::format_string<Args...> fmt, Args&&... args)
     {
-        __log(text_formatting::gray, "TRACE", fmt, std::forward<Args>(args)...);
+        __log(text_formatting::cyan, "TRACE", fmt, std::forward<Args>(args)...);
     }
 
     namespace progress
