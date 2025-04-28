@@ -14,19 +14,36 @@ class ThreadPool
     explicit ThreadPool(size_t num_threads);
     ~ThreadPool();
 
-    template <class F>
+    template <typename F>
     void enqueue(F&& f)
     {
         {
             std::unique_lock<std::mutex> lock(queue_mutex);
-            tasks.emplace(std::forward<F>(f));
+            normal_tasks.emplace(std::forward<F>(f));
         }
         condition.notify_one();
     }
 
+    template <typename F>
+    void enqueue_low_priority(F&& f)
+    {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            low_priority_tasks.emplace(std::forward<F>(f));
+        }
+        condition.notify_one();
+    }
+
+    static ThreadPool& global()
+    {
+        static ThreadPool instance(std::thread::hardware_concurrency());
+        return instance;
+    }
+
   private:
     std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
+    std::queue<std::function<void()>> normal_tasks;
+    std::queue<std::function<void()>> low_priority_tasks;
     std::mutex queue_mutex;
     std::condition_variable condition;
     bool stop;

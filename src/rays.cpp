@@ -1,6 +1,4 @@
 #include "colors.hpp"
-
-#include "utils/logging.hpp"
 #include "vector.hpp"
 #include <cmath>
 #include <rays.hpp>
@@ -29,7 +27,6 @@ color::Color3 ray_color(const Ray& r)
     {
         Point3 hit_point = r.at(t);                          // Compute the hit point
         Vec3 normal = unit_vec(hit_point - Point3(0, 0, 0)); // Normal is from center to point
-        logging::trace("{}", normal.print());
         auto exposure = 0.5;
         return exposure * color::Color3(normal.x() + 1, normal.y() + 1, normal.z() + 1);
         // Map normal from (-1,1) -> (0,1)

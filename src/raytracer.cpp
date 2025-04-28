@@ -20,7 +20,7 @@ std::ofstream get_output_file_stream(std::filesystem::path file_name)
     std::ofstream out_stream(file_name);
     if (!out_stream)
     {
-        logging::log_error("Opening {} failed.", file_name.c_str());
+        logging::error("Opening {} failed.", file_name.c_str());
     }
 
     return out_stream;
@@ -62,6 +62,8 @@ int main()
         num_threads = 1;
     }
 
+    bool done = false;
+
     while (!renderer.should_close())
     {
         renderer.clear();
@@ -70,38 +72,44 @@ int main()
         int num_tiles_x = (image_width + tile_size - 1) / tile_size;
         int num_tiles_y = (image_height + tile_size - 1) / tile_size;
 
-        ThreadPool pool(std::thread::hardware_concurrency());
+        auto& pool = ThreadPool::global();
         std::atomic<int> tiles_completed(0);
 
-        for (int ty = 0; ty < num_tiles_y; ty++)
+        if (!done)
         {
-            for (int tx = 0; tx < num_tiles_x; tx++)
+            for (int ty = 0; ty < num_tiles_y; ty++)
             {
-                pool.enqueue([&, tx, ty]() {
-                    int start_x = tx * tile_size;
-                    int end_x = std::min(start_x + tile_size, image_width);
-                    int start_y = ty * tile_size;
-                    int end_y = std::min(start_y + tile_size, image_height);
+                auto lambda = [ty, num_tiles_y]() { return num_tiles_y - ty == 1; };
+                logging::progress::with_data(lambda, "Tiles left: {}", (num_tiles_y - ty) - 1);
 
-                    for (int j = start_y; j < end_y; j++)
-                    {
-                        for (int i = start_x; i < end_x; i++)
+                for (int tx = 0; tx < num_tiles_x; tx++)
+                {
+                    pool.enqueue([&, tx, ty]() {
+                        int start_x = tx * tile_size;
+                        int end_x = std::min(start_x + tile_size, image_width);
+                        int start_y = ty * tile_size;
+                        int end_y = std::min(start_y + tile_size, image_height);
+
+                        for (int j = start_y; j < end_y; j++)
                         {
-                            auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
-                            auto ray_direction = pixel_center - camera_center;
-                            Ray r(camera_center, ray_direction);
+                            for (int i = start_x; i < end_x; i++)
+                            {
+                                auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+                                auto ray_direction = pixel_center - camera_center;
+                                Ray r(camera_center, ray_direction);
 
-                            color::Color3 pixel_color = ray_color(r);
-                            renderer.update_pixel_color(i, j, pixel_color);
+                                color::Color3 pixel_color = ray_color(r);
+                                renderer.update_pixel_color(i, j, pixel_color);
+                            }
                         }
-                    }
 
-                    tiles_completed++;
-                });
+                        tiles_completed++;
+                    });
+                }
             }
+            done = true;
         }
 
-        // Progressive rendering
         while (tiles_completed < num_tiles_x * num_tiles_y)
         {
             renderer.render();

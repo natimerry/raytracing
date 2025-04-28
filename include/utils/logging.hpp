@@ -6,6 +6,7 @@
 #include <iostream>
 #include <print>
 #include <colors.hpp>
+#include <threadpool.hpp>
 
 static inline std::string current_time()
 {
@@ -17,7 +18,6 @@ static inline std::string current_time()
     return buffer;
 }
 
-// TODO: move all of this into a singleton object which asynchronously handles logging
 template <typename T>
 concept Printable = requires(std::ostream& os, T val) {
     { os << val } -> std::convertible_to<std::ostream&>;
@@ -28,8 +28,11 @@ namespace logging
     inline void __log(const std::string_view& level_color, const std::string& level_label,
                       std::format_string<Args...> fmt, Args&&... args)
     {
-        std::println("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label, text_formatting::reset,
-                     current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
+        std::string message =
+            std::format("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label, text_formatting::reset,
+                        current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
+
+        ThreadPool::global().enqueue_low_priority([msg = std::move(message)]() { std::println("{}", msg); });
     }
 
     template <Printable... Args>
@@ -45,7 +48,7 @@ namespace logging
     }
 
     template <Printable... Args>
-    inline void log_error(std::format_string<Args...> fmt, Args&&... args)
+    inline void error(std::format_string<Args...> fmt, Args&&... args)
     {
         __log(text_formatting::red, "ERROR", fmt, std::forward<Args>(args)...);
     }
@@ -59,7 +62,7 @@ namespace logging
     template <Printable... Args>
     inline void trace(std::format_string<Args...> fmt, Args&&... args)
     {
-        __log(text_formatting::cyan, "TRACE", fmt, std::forward<Args>(args)...);
+        __log(text_formatting::gray, "TRACE", fmt, std::forward<Args>(args)...);
     }
 
     namespace progress
@@ -81,6 +84,7 @@ namespace logging
             else
             {
                 print();
+                std::print("\r... done");
                 std::cout.flush();
                 std::println();
             }
