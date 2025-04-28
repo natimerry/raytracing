@@ -1,5 +1,6 @@
 #include "renderer.hpp"
 #include "utils/logging.hpp"
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -8,6 +9,8 @@
 #include <print>
 #include <fstream>
 #include <rays.hpp>
+#include <thread>
+#include <threadpool.hpp>
 
 #define PROJECT_NAME "raytracer"
 
@@ -53,26 +56,58 @@ int main()
 
     Renderer renderer(image_width, image_height, "OpenGL Ray Tracer");
 
+    unsigned int num_threads = std::thread::hardware_concurrency() - 1;
+    if (num_threads < 1)
+    {
+        num_threads = 1;
+    }
+
     while (!renderer.should_close())
     {
-        renderer.clear(); // Clear the screen
+        renderer.clear();
 
-        for (int j = 0; j < image_height; j++)
+        const int tile_size = 128;
+        int num_tiles_x = (image_width + tile_size - 1) / tile_size;
+        int num_tiles_y = (image_height + tile_size - 1) / tile_size;
+
+        ThreadPool pool(std::thread::hardware_concurrency());
+        std::atomic<int> tiles_completed(0);
+
+        for (int ty = 0; ty < num_tiles_y; ty++)
         {
-            // Process each pixel in the current scanline
-            for (int i = 0; i < image_width; i++)
+            for (int tx = 0; tx < num_tiles_x; tx++)
             {
-                auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
-                auto ray_direction = pixel_center - camera_center;
-                Ray r(camera_center, ray_direction);
+                pool.enqueue([&, tx, ty]() {
+                    int start_x = tx * tile_size;
+                    int end_x = std::min(start_x + tile_size, image_width);
+                    int start_y = ty * tile_size;
+                    int end_y = std::min(start_y + tile_size, image_height);
 
-                color::Color3 pixel_color = ray_color(r);
-                renderer.update_pixel_color(i, j, pixel_color);
+                    for (int j = start_y; j < end_y; j++)
+                    {
+                        for (int i = start_x; i < end_x; i++)
+                        {
+                            auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+                            auto ray_direction = pixel_center - camera_center;
+                            Ray r(camera_center, ray_direction);
+
+                            color::Color3 pixel_color = ray_color(r);
+                            renderer.update_pixel_color(i, j, pixel_color);
+                        }
+                    }
+
+                    tiles_completed++;
+                });
             }
+        }
 
-            renderer.render();       // Render the texture onto the screen
-            renderer.swap_buffers(); // Swap buffers to show the rendered frame
-            renderer.poll_events();  // Process events (e.g., input, window events)
+        // Progressive rendering
+        while (tiles_completed < num_tiles_x * num_tiles_y)
+        {
+            renderer.render();
+            renderer.swap_buffers();
+            renderer.poll_events();
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }
 
