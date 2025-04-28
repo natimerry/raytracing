@@ -62,7 +62,7 @@ namespace logging
     template <Printable... Args>
     inline void trace(std::format_string<Args...> fmt, Args&&... args)
     {
-        __log(text_formatting::gray, "TRACE", fmt, std::forward<Args>(args)...);
+        __log(text_formatting::magenta, "TRACE", fmt, std::forward<Args>(args)...);
     }
 
     namespace progress
