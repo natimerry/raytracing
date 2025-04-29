@@ -1,10 +1,14 @@
+#include "colors.hpp"
 #include "renderer.hpp"
 #include "utils/logging.hpp"
+#include "vector.hpp"
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <print>
 #include <fstream>
@@ -23,6 +27,34 @@ std::ofstream get_output_file_stream(std::filesystem::path file_name)
     }
 
     return out_stream;
+}
+
+float radians(float degrees)
+{
+    return degrees * (M_PI / 180.0f);
+}
+
+void handle_input(Renderer& renderer, Point3& camera_center)
+{
+    auto move_speed = 0.1f;             // Speed of camera movement
+    Vec3 camera_front = Vec3(0, 0, -1); // Camera looks down the negative Z axis initially
+    Vec3 camera_up = Vec3(0, 1, 0);     // World up vector
+
+    Vec3 camera_right = unit_vec(cross(camera_front, camera_up)); // Right vector
+
+    // Handle keyboard movement (WASD)
+    if (renderer.is_key_pressed(GLFW_KEY_W))
+        camera_center += camera_front * move_speed; // Move forward (camera front direction)
+    if (renderer.is_key_pressed(GLFW_KEY_S))
+        camera_center += camera_front * -move_speed; // Move backward
+    if (renderer.is_key_pressed(GLFW_KEY_A))
+        camera_center += camera_right * move_speed; // Move left (camera right direction)
+    if (renderer.is_key_pressed(GLFW_KEY_D))
+        camera_center += camera_right * -move_speed; // Move right
+    if (renderer.is_key_pressed(GLFW_KEY_Q))         // Move up
+        camera_center += camera_up * move_speed;
+    if (renderer.is_key_pressed(GLFW_KEY_E)) // Move down
+        camera_center += camera_up * -move_speed;
 }
 
 int main()
@@ -53,37 +85,12 @@ int main()
     auto viewport_upper_left = camera_center - Vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
     auto pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    Renderer renderer(image_width, image_height, "OpenGL Ray Tracer");
+    auto render_logger = logging::make_logger(text_formatting::bg_magenta, "RENDERER");
+    Renderer renderer(image_width, image_height, "Raytracer", render_logger);
 
     while (!renderer.should_close())
     {
-        auto move_speed = 0.05;
-        if (renderer.is_key_pressed(GLFW_KEY_UP))
-        {
-            camera_center += Vec3(0, move_speed, 0);
-        }
-        if (renderer.is_key_pressed(GLFW_KEY_DOWN))
-        {
-            camera_center += Vec3(0, -move_speed, 0);
-        }
-        if (renderer.is_key_pressed(GLFW_KEY_LEFT))
-        {
-            camera_center += Vec3(-move_speed, 0, 0);
-        }
-        if (renderer.is_key_pressed(GLFW_KEY_RIGHT))
-        {
-            camera_center += Vec3(move_speed, 0, 0);
-        }
-
-        if (renderer.is_key_pressed(GLFW_KEY_Q))
-        {
-            camera_center += Vec3(0, 0, -move_speed);
-        }
-        if (renderer.is_key_pressed(GLFW_KEY_E))
-        {
-            camera_center += Vec3(0, 0, +move_speed);
-        }
-
+        handle_input(renderer, camera_center);
         const int tile_size = 256;
         int num_tiles_x = (image_width + tile_size - 1) / tile_size;
         int num_tiles_y = (image_height + tile_size - 1) / tile_size;

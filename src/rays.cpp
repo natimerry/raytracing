@@ -30,7 +30,7 @@ color::Color3 Ray::ray_color()
 
     if (t > 0.0)
     {
-        Vec3 view_dir = unit_vec(-this->direction());
+        Vec3 view_dir = unit_vec(this->direction());
 
         double cos_theta = std::max(0.0, dot(normal, view_dir));
 
@@ -42,7 +42,7 @@ color::Color3 Ray::ray_color()
 
         double exposure = angle_exposure * distance_exposure;
 
-        return exposure * color::Color3(normal.x() + 1, normal.y() + 1, normal.z() + 1);
+        return exposure * color::Color3(1, 1, 1);
     }
 
     Vec3 unit_direction = unit_vec(this->direction());

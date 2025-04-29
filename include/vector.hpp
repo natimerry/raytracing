@@ -60,6 +60,13 @@ class Vec3
         return *this;
     }
 
+    Vec3& operator-=(const Vec3& v)
+    {
+        e[0] -= v.x();
+        e[1] -= v.y();
+        e[2] -= v.z();
+        return *this;
+    }
     // This is for DOT product
     Vec3& operator*=(double t)
     {

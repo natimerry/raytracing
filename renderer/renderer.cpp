@@ -1,40 +1,11 @@
 #include "renderer.hpp"
 #include <GLFW/glfw3.h>
+#include <cstdio>
 #include <fstream>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
-
-Renderer::Renderer(int width, int height, const char* title)
-    : m_width(width),
-      m_height(height)
-{
-    if (!glfwInit())
-    {
-        throw std::runtime_error("Failed to initialize GLFW");
-    }
-
-    m_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-    if (!m_window)
-    {
-        glfwTerminate();
-        throw std::runtime_error("Failed to create GLFW window");
-    }
-
-    glfwMakeContextCurrent(m_window);
-
-    if (glewInit() != GLEW_OK)
-    {
-        throw std::runtime_error("Failed to initialize GLEW");
-    }
-
-    // Initialize pixel buffer
-    m_pixel_buffer.resize(width * height * 3, 0.0f);
-
-    setup_shader();
-    setup_quad();
-    setup_texture();
-}
 
 Renderer::~Renderer()
 {
@@ -44,6 +15,8 @@ Renderer::~Renderer()
     glDeleteProgram(m_shader_program);
     glfwDestroyWindow(m_window);
     glfwSwapInterval(1);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwTerminate();
 }
 
@@ -84,6 +57,26 @@ void Renderer::update_pixel_color(int x, int y, const color::Color3& color)
         m_pixel_buffer[index + 1] = color.y(); // G
         m_pixel_buffer[index + 2] = color.z(); // B
     }
+}
+
+Vec3 Renderer::get_mouse_delta()
+{
+    double current_x, current_y;
+    glfwGetCursorPos(m_window, &current_x, &current_y);
+
+    if (first_mouse)
+    {
+        last_mouse_x = current_x;
+        last_mouse_y = current_y;
+        first_mouse = false;
+        return Vec3(0, 0, 0);
+    }
+
+    Vec3 delta(current_x - last_mouse_x, last_mouse_y - current_y, 0); // Inverted Y
+    last_mouse_x = current_x;
+    last_mouse_y = current_y;
+
+    return delta;
 }
 
 std::string Renderer::load_shader_source(const std::string& filename)

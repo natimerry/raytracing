@@ -1,9 +1,11 @@
 #ifndef logging_H_
 #define logging_H_
+#include "utils/log_sink.hpp"
 #include <chrono>
 #include <format>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <print>
 #include <colors.hpp>
 #include <threadpool.hpp>
@@ -22,8 +24,43 @@ template <typename T>
 concept Printable = requires(std::ostream& os, T val) {
     { os << val } -> std::convertible_to<std::ostream&>;
 };
+
+#include <string>
+#include <format>
+
 namespace logging
 {
+
+    class LambdaLogger : public ILogSink
+    {
+      public:
+        LambdaLogger(std::string_view color, std::string label)
+            : level_color(color),
+              level_label(std::move(label))
+        {
+        }
+
+      private:
+        void log_impl(std::string_view fmt_str, std::format_args args) const override
+        {
+            std::string message = std::format("[{}{}{}{} {}] {}", level_color, "\033[1m", level_label, "\033[0m",
+                                              current_time(), std::vformat(fmt_str, args));
+            std::cout << message << std::endl;
+        }
+
+        std::string_view level_color;
+        std::string level_label;
+
+        static std::string current_time()
+        {
+            // Same as your earlier current_time implementation
+            std::time_t now = std::time(nullptr);
+            char buf[20];
+            std::strftime(buf, sizeof(buf), "%H:%M:%S", std::localtime(&now));
+            return buf;
+        }
+    };
+
     template <typename... Args>
     inline void __log(const std::string_view& level_color, const std::string& level_label,
                       std::format_string<Args...> fmt, Args&&... args)
@@ -33,6 +70,11 @@ namespace logging
                         current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
 
         ThreadPool::global().enqueue_low_priority([msg = std::move(message)]() { std::println("{}", msg); });
+    }
+
+    inline std::shared_ptr<ILogSink> make_logger(std::string_view color, std::string label)
+    {
+        return std::make_shared<LambdaLogger>(color, std::move(label));
     }
 
     template <Printable... Args>
