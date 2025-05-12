@@ -42,9 +42,6 @@ bool Sphere::hit(const Ray& r, float t_min, float t_max, HitRecord& rec) const
     Vec3 outward_normal = (rec.p - center) / radius;
     rec.set_face_normal(r, outward_normal);
 
-    logging::debug("Hit for sphere at t: {}, point: ({}, {}, {}), normal: ({}, {}, {})",
-                   rec.t, rec.p.x(), rec.p.y(), rec.p.z(),
-                   rec.normal.x(), rec.normal.y(), rec.normal.z());
 
     return true;
 }

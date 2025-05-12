@@ -65,7 +65,7 @@ class Renderer
     void setup_texture();
     void update_texture();
 
-    std::string load_shader_source(const std::string& filename);
+    static std::string load_shader_source(const std::string& filename);
 
     GLFWwindow* m_window;
     GLuint m_shader_program;

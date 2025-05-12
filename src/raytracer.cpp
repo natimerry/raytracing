@@ -128,6 +128,7 @@ int main()
         {
             for (int tx = 0; tx < num_tiles_x; tx++)
             {
+
                 pool.enqueue([&, tx, ty]() {
                     int start_x = tx * tile_size;
                     int end_x = std::min(start_x + tile_size, image_width);
@@ -147,7 +148,7 @@ int main()
                         }
                     }
 
-                    tiles_completed++;
+                    ++tiles_completed;
                 });
             }
         }

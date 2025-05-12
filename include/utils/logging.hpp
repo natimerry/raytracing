@@ -47,20 +47,17 @@ namespace logging
         {
             auto level_color = this->level_color;
             auto level_label = this->level_label;
+            std::string message = std::format(
+                "[{}{}{}{} {}] {}",
+                level_color,
+                text_formatting::bold,
+                level_label,
+                text_formatting::reset,
+                current_time(),
+                std::vformat(fmt_str, args)  // Format inside the lambda
+            );
 
-            log_pool.enqueue([level_color, level_label, fmt_str, args]() {
-                // Perform the formatting directly inside the lambda
-                std::string message = std::format(
-                    "[{}{}{}{} {}] {}",
-                    level_color,
-                    text_formatting::bold,
-                    level_label,
-                    text_formatting::reset,
-                    current_time(),
-                    std::vformat(fmt_str, args)  // Format inside the lambda
-                );
-
-                // Output the message safely
+            log_pool.enqueue([message]() {
                 std::cout << message << std::endl;
             });
         }

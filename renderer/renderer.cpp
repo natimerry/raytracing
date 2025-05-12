@@ -96,9 +96,12 @@ void Renderer::setup_shader()
 {
     // Vertex shader
     std::string vertex_shader_code = load_shader_source("renderer/shaders/vertex_shader.glsl");
+    m_logger->log("Vertex shader code:\n{}", vertex_shader_code);
 
     // Fragment shader
     std::string fragment_shader_code = load_shader_source("renderer/shaders/fragment_shader.glsl");
+    m_logger->log("Fragment shader code:\n{}", fragment_shader_code);
+
 
     GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     const char* vertex_shader_cstr = vertex_shader_code.c_str();
@@ -108,7 +111,7 @@ void Renderer::setup_shader()
     GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     const char* fragment_shader_cstr = fragment_shader_code.c_str();
     glShaderSource(fragment_shader, 1, &fragment_shader_cstr, nullptr);
-    glCompileShader(fragment_shader);
+    glCompileShader(fragment_shader); // TODO: compile to binary data during compilation (cook the shader)
 
     m_shader_program = glCreateProgram();
     glAttachShader(m_shader_program, vertex_shader);
@@ -121,6 +124,7 @@ void Renderer::setup_shader()
 
 void Renderer::setup_quad()
 {
+    m_logger->log("Setting up quad");
     float vertices[] = {-1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
 
     glGenVertexArrays(1, &m_vao);
