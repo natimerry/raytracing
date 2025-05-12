@@ -24,26 +24,15 @@ class ThreadPool
         condition.notify_one();
     }
 
-    template <typename F>
-    void enqueue_low_priority(F&& f)
-    {
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            low_priority_tasks.emplace(std::forward<F>(f));
-        }
-        condition.notify_one();
-    }
-
     static ThreadPool& global()
     {
-        static ThreadPool instance(std::thread::hardware_concurrency());
+        static ThreadPool instance(std::thread::hardware_concurrency()-1);
         return instance;
     }
 
   private:
     std::vector<std::thread> workers;
     std::queue<std::function<void()>> normal_tasks;
-    std::queue<std::function<void()>> low_priority_tasks;
     std::mutex queue_mutex;
     std::condition_variable condition;
     bool stop;

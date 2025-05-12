@@ -31,6 +31,7 @@ concept Printable = requires(std::ostream& os, T val) {
 
 namespace logging
 {
+    static ThreadPool log_pool(1);
 
     class LambdaLogger : public ILogSink
     {
@@ -44,9 +45,24 @@ namespace logging
       private:
         void log_impl(std::string_view fmt_str, std::format_args args) const override
         {
-            std::string message = std::format("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label,
-                                              text_formatting::reset, current_time(), std::vformat(fmt_str, args));
-            ThreadPool::global().enqueue_low_priority([message]() { std::cout << message << std::endl; });
+            auto level_color = this->level_color;
+            auto level_label = this->level_label;
+
+            log_pool.enqueue([level_color, level_label, fmt_str, args]() {
+                // Perform the formatting directly inside the lambda
+                std::string message = std::format(
+                    "[{}{}{}{} {}] {}",
+                    level_color,
+                    text_formatting::bold,
+                    level_label,
+                    text_formatting::reset,
+                    current_time(),
+                    std::vformat(fmt_str, args)  // Format inside the lambda
+                );
+
+                // Output the message safely
+                std::cout << message << std::endl;
+            });
         }
 
         std::string_view level_color;
@@ -66,11 +82,22 @@ namespace logging
     inline void __log(const std::string_view& level_color, const std::string& level_label,
                       std::format_string<Args...> fmt, Args&&... args)
     {
-        std::string message =
-            std::format("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label, text_formatting::reset,
-                        current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
+        log_pool.enqueue([level_color, level_label, fmt, args = std::make_tuple(std::move(args)...)]() {
+            // Use std::apply to unpack the tuple into std::vformat
+            std::string message = std::format(
+                "[{}{}{}{} {}] {}",
+                level_color,
+                text_formatting::bold,
+                level_label,
+                text_formatting::reset,
+                current_time(),
+                std::vformat(fmt.get(), std::apply([](auto&&... unpacked_args) {
+                    return std::make_format_args(std::forward<decltype(unpacked_args)>(unpacked_args)...);
+                }, args))  // Unpack args tuple here
+            );
 
-        std::println("{}", message);
+            std::cout << message << std::endl;
+        });
     }
 
     inline std::shared_ptr<ILogSink> make_logger(std::string_view color, std::string label)
