@@ -3,6 +3,8 @@ project('raytracer', 'cpp',
   default_options : ['warning_level=3',
                      'cpp_std=c++23'])
 
+
+
 glfw_dep = dependency('glfw3')
 glew_dep = dependency('glew')
 
@@ -12,12 +14,15 @@ renderer_includes = include_directories('renderer')
 cfg_data = configuration_data()
 cfg_data.set('version', meson.project_version())
 
+
 sources = [
     'src/raytracer.cpp',
     'src/colors.cpp',
     'src/rays.cpp',
     'src/threadpool.cpp',
+    'src/objects/sphere.cpp'
 ]
+
 
 render_sources = [
     'renderer/renderer.cpp'

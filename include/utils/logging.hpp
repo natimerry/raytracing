@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <print>
 #include <colors.hpp>
 #include <threadpool.hpp>
@@ -43,9 +44,9 @@ namespace logging
       private:
         void log_impl(std::string_view fmt_str, std::format_args args) const override
         {
-            std::string message = std::format("[{}{}{}{} {}] {}", level_color, "\033[1m", level_label, "\033[0m",
-                                              current_time(), std::vformat(fmt_str, args));
-            std::cout << message << std::endl;
+            std::string message = std::format("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label,
+                                              text_formatting::reset, current_time(), std::vformat(fmt_str, args));
+            ThreadPool::global().enqueue_low_priority([message]() { std::cout << message << std::endl; });
         }
 
         std::string_view level_color;
