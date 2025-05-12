@@ -1,4 +1,5 @@
 #include <hittable.h>
+
 void HitRecord::set_face_normal(const Ray& r, const Vec3& outward_normal)
 {
     // OUTWARD NORMAL SHOULD HAVE UNIT LENGTH

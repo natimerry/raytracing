@@ -28,13 +28,11 @@ class Ray
         return orig + t * dir;
     }
 
-    color::Color3 ray_color();
-
   private:
     Point3 orig;
     Point3 dir;
 };
 
-color::Color3 ray_color(const Ray& r);
+
 
 #endif // rays_H_

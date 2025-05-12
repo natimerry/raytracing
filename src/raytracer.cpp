@@ -2,6 +2,9 @@
 #include "renderer.hpp"
 #include "utils/logging.hpp"
 #include "vector.hpp"
+#include "objects/sphere.hpp"
+#include "utils/constants.hpp"
+
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cstdio>
@@ -57,6 +60,19 @@ void handle_input(Renderer& renderer, Point3& camera_center)
         camera_center += camera_up * -move_speed;
 }
 
+
+color::Color3 ray_color(const Ray& r, HittableObject& world)
+{
+    HitRecord rec;
+    if (world.hit(r, 0, infinity, rec)) {
+        return 0.5 * (rec.normal + color::Color3(1,1,1));
+    }
+
+    Vec3 unit_direction = unit_vec(r.direction());
+    auto a = 0.5*(unit_direction.y() + 1.0);
+    return (1.0-a)*color::Color3(1.0, 1.0, 1.0) + a*color::Color3(0.5, 0.7, 1.0);
+}
+
 int main()
 {
     auto aspect_ratio = 16.0 / 9.0;
@@ -88,6 +104,16 @@ int main()
     auto render_logger = logging::make_logger(text_formatting::bg_magenta, "RENDERER");
     Renderer renderer(image_width, image_height, "Raytracer", render_logger);
 
+    // World which has a bunch of objects which we can hit
+
+    std::vector<std::shared_ptr<HittableObject>> hittable_objects;
+
+
+    auto sphere1 = std::make_shared<Sphere>(Point3(0,0,-1), 0.5);
+    hittable_objects.push_back(sphere1);
+
+    HitList world(hittable_objects);
+
     while (!renderer.should_close())
     {
         handle_input(renderer, camera_center);
@@ -116,7 +142,7 @@ int main()
                             auto ray_direction = pixel_center - camera_center;
                             Ray r(camera_center, ray_direction);
 
-                            color::Color3 pixel_color = r.ray_color();
+                            color::Color3 pixel_color = ray_color(r,world);
                             renderer.update_pixel_color(i, j, pixel_color);
                         }
                     }

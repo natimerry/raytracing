@@ -11,7 +11,7 @@ class Sphere : public HittableObject
     Sphere(const Point3& center, double radius);
     ~Sphere();
 
-    bool hit(const Ray& r, double ray_t_min, double ray_t_maxm, HitRecord& record) const override;
+    bool hit(const Ray&r, float t_min, float t_max, HitRecord& rec) const override;
 
   private:
     Point3 center;

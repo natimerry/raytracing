@@ -18,9 +18,9 @@ cfg_data.set('version', meson.project_version())
 sources = [
     'src/raytracer.cpp',
     'src/colors.cpp',
-    'src/rays.cpp',
     'src/threadpool.cpp',
-    'src/objects/sphere.cpp'
+    'src/objects/sphere.cpp',
+    'src/hittable.cpp',
 ]
 
 

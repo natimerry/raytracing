@@ -70,7 +70,7 @@ namespace logging
             std::format("[{}{}{}{} {}] {}", level_color, text_formatting::bold, level_label, text_formatting::reset,
                         current_time(), std::vformat(fmt.get(), std::make_format_args(args...)));
 
-        ThreadPool::global().enqueue_low_priority([msg = std::move(message)]() { std::println("{}", msg); });
+        std::println("{}", message);
     }
 
     inline std::shared_ptr<ILogSink> make_logger(std::string_view color, std::string label)
