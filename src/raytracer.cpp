@@ -110,7 +110,10 @@ int main()
 
 
     auto sphere1 = std::make_shared<Sphere>(Point3(0,0,-1), 0.5);
+    auto sphere2 = std::make_shared<Sphere>(Point3(0,0,-4), 3);
+
     hittable_objects.push_back(sphere1);
+    hittable_objects.push_back(sphere2);
 
     HitList world(hittable_objects);
 
